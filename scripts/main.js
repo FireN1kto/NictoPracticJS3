@@ -1,13 +1,18 @@
-Vue.component('Tasks',{
+Vue.component('Task',{
     template: `
     <div class="newTasks">
         <h2>Новые задачи</h2>
-        <button v-if="!showForm" @click="openForm" class="create">Создать задачу</button>
+        <div class="create">
+            <button v-if="!showForm" @click="openForm">Создать задачу</button>
+        </div>
         <modal :show="showForm" @close="closeForm">
             <div class="modal-content">
                 <createTask @task-submitted="addTask" />
             </div>
         </modal>
+        <Tasks
+            :tasks="tasks"
+        ></Tasks>
     </div>
     `,
     data() {
@@ -18,7 +23,7 @@ Vue.component('Tasks',{
     },
     methods: {
         addTask(task){
-            if (!tasks.puncts || tasks.puncts.length === 0) {
+            if (!task.puncts || task.puncts.length === 0) {
                 alert("Задача должна содержать хотя бы один пункт!");
                 return;
             } else if (this.tasks.some(app => app.name === task.name)) {
@@ -43,7 +48,7 @@ Vue.component('createTask', {
     template: `
     <form class="task-form" @submit.prevent="onSubmit">
         <p>
-            <label for="task">Название заявки</label>
+            <label for="task">Название задачи</label>
             <input id="task" v-model="name" placeholder="Пройти бося Оленя в Valheim">
         </p>
 
@@ -53,11 +58,9 @@ Vue.component('createTask', {
         </div>
        
         <p>
-            <button @click="addPunct" class="add-punct">Добавить задачу</button>
-        </p>
-
-        <p>
-            <input type="submit" value="Создать заявку"> 
+            <button @click="addPunct" class="add-punct">Добавить пункт</button>
+            
+            <input type="submit" value="Создать задачу"> 
         </p>
 
         <p v-if="errors.length">
@@ -102,7 +105,7 @@ Vue.component('createTask', {
                         name: this.name,
                         puncts: punctsArray
                     };
-                    this.$emit('application-submitted', application);
+                    this.$emit('task-submitted', task);
                     this.name = null;
                     this.puncts = [];
                 }
@@ -110,6 +113,30 @@ Vue.component('createTask', {
         }
     }
 });
+
+Vue.component('Tasks', {
+    props: {
+        tasks: {
+            type: Array,
+            default: () => []
+        }
+    },
+    template: `
+    <div class="task-div">
+        <ul>
+            <p v-if="!tasks.length" class="noneTasks">Здесь ещё нет задач.</p>
+            <div v-for="task in tasks" :key="task.name" class="tasks-info">
+                <p class="taskName">{{ task.name }}</p>
+                <ul>
+                    <p v-for="(punct, index) in task.puncts" :key="index">
+                        <li v-for="(punct, index) in task.puncts" :key="index">{{ punct }}</li>
+                    </p>
+                </ul>
+            </div>
+        </ul>
+    </div>
+    `
+})
 
 
 Vue.component('modal',{
