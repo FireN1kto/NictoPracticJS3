@@ -21,6 +21,7 @@ Vue.component('Task',{
         <Tasks
             :tasks="tasks"
             @edit-task="startEditTask"
+            @delete-task="deleteTask"
         ></Tasks>
     </div>
     `,
@@ -42,8 +43,11 @@ Vue.component('Task',{
                 return;
             }
             else {
-                this.tasks.push(task);
-                this.showForm = false
+                this.tasks.push({
+                    ...task,
+                    lastModifiedAt: new Date().toISOString().slice(0, 16)
+                });
+                this.closeCreateForm();
             }
         },
         updateTask(updatedTask) {
@@ -51,7 +55,13 @@ Vue.component('Task',{
             if (index !== -1) {
                 this.tasks.splice(index, 1, updatedTask);
             }
-            this.closeForm();
+            this.closeEditForm();
+        },
+        deleteTask(task) {
+            const index = this.tasks.findIndex(t => t.name === task.name);
+            if (index !== -1) {
+                this.tasks.splice(index, 1); // Удаляем задачу из массива
+            }
         },
         openCreateForm() {
             this.showCreateForm = true;
@@ -178,11 +188,15 @@ Vue.component('editTask', {
             <input type="datetime-local" id="createdAt" v-model="createdAt" disabled>
         </p>
         <p>
+            <label for="lastModifiedAt">Дата последнего изменения:</label>
+            <input type="datetime-local" id="lastModifiedAt" v-model="lastModifiedAt" disabled>
+        </p>
+        <p>
             <label for="deadline">Дедлайн:</label>
             <input type="datetime-local" id="deadline" v-model="deadline">
         </p>
-        <p>
-            <button @click="addPunct" class="add-punct">Добавить пункт</button>
+        <p class="add-save">
+            <button @click="addPunct" class="addPunct">Добавить пункт</button>
             <input type="submit" value="Сохранить изменения">
         </p>
         <p v-if="errors.length">
@@ -198,6 +212,7 @@ Vue.component('editTask', {
             name: this.task.name,
             puncts: [...this.task.puncts],
             createdAt: this.task.createdAt,
+            lastModifiedAt: this.task.lastModifiedAt || new Date().toISOString().slice(0, 16),
             deadline: this.task.deadline,
             errors: []
         };
@@ -226,6 +241,7 @@ Vue.component('editTask', {
                     name: this.name,
                     puncts: this.puncts.filter(punct => punct.trim() !== ''),
                     createdAt: this.createdAt,
+                    lastModifiedAt: new Date().toISOString().slice(0, 16),
                     deadline: this.deadline
                 };
                 this.$emit('task-updated', updatedTask);
@@ -249,8 +265,9 @@ Vue.component('Tasks', {
             <div v-for="task in tasks" :key="task.name" class="tasks-info">
                 <p class="taskName">{{ task.name }}</p>
                 <p><strong>Дата создания:</strong> {{ formatDate(task.createdAt) }}</p>
+                <p><strong>Дата последнего изменения:</strong> {{ formatDate(task.lastModifiedAt) }}</p>
                 <ul>
-                    <p>Описание задачи:</p>
+                    <p><strong>Описание задачи:</strong></p>
                     <div class="puncts">
                         <p v-for="(punct, index) in task.puncts" :key="index">
                             <li v-for="(punct, index) in task.puncts" :key="index">{{ punct }}</li>
@@ -258,7 +275,10 @@ Vue.component('Tasks', {
                     </div>
                 </ul>
                 <p><strong>Дедлайн:</strong> {{ formatDate(task.deadline) }}</p>
-                <button @click="$emit('edit-task', task)" class="redact">Редактировать</button>
+                <div class="red-del">
+                    <button @click="$emit('edit-task', task)" class="redact">Редактировать</button>
+                    <button @click="$emit('delete-task', task)" class="delete">Удалить задачу</button>
+                </div>
             </div>
         </ul>
     </div>

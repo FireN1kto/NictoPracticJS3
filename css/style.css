@@ -38,12 +38,24 @@ body {
     border: none;
 }
 
+.red-del {
+    width: 100%;
+}
+
 .redact {
     padding: 4%;
     background-color: #b3dcfd;
     border: none;
     margin-top: 5%;
     width: 40%;
+}
+
+.delete {
+    padding: 4%;
+    background-color: #b3dcfd;
+    border: none;
+    margin-top: 5%;
+    width: 50%;
 }
 
 .noneTasks {
@@ -157,4 +169,17 @@ body {
 
 .tasks-info > ul > li {
     margin-left: 5%;
+}
+
+.add-save {
+    display: flex;
+    justify-content: space-between;
+    width: 70%;
+}
+
+.addPunct {
+    background: coral;
+    border: none;
+    border-radius: 5px;
+    padding: 3%;
 }
