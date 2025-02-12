@@ -54,7 +54,8 @@ Vue.component('Task',{
             </modal>
             <TestingTasks 
                 :tasks="testingTasks" 
-                @edit-task="startEditTask" 
+                @edit-task="startEditTask"
+                @return-from-testing="handleReturnFromTesting"
             ></TestingTasks>
         </div>
     </div>
@@ -66,22 +67,26 @@ Vue.component('Task',{
             testingTasks: [],
             showCreateForm: false,
             showEditForm: false,
+            showReturnForm: false,
             editingTask: null
         }
     },
     methods: {
-        addTask(task){
+        addTask(task) {
             if (!task.puncts || task.puncts.length === 0) {
                 alert("Задача должна содержать хотя бы один пункт!");
                 return;
             } else if (this.tasks.some(app => app.name === task.name)) {
                 alert("Задача с таким именем уже существует!");
                 return;
-            }
-            else {
+            } else {
                 this.tasks.push({
-                    ...task,
-                    lastModifiedAt: new Date().toISOString().slice(0, 16)
+                    name: task.name,
+                    puncts: task.puncts,
+                    createdAt: task.createdAt,
+                    lastModifiedAt: new Date().toISOString().slice(0, 16),
+                    deadline: task.deadline,
+                    returnReason: null
                 });
                 this.closeCreateForm();
             }
@@ -89,14 +94,18 @@ Vue.component('Task',{
         updateTask(updatedTask) {
             let index = this.tasks.findIndex(task => task.name === updatedTask.name);
             if (index !== -1) {
-                this.tasks.splice(index, 1, updatedTask);
+                this.tasks.splice(index, 1, {
+                    updatedTask,
+                    returnReason: null
+                });
             } else {
                 // Если задача не найдена в tasks, ищем её в inProgressTasks
                 index = this.inProgressTasks.findIndex(task => task.name === updatedTask.name);
                 if (index !== -1) {
-                    this.inProgressTasks.splice(index, 1, updatedTask);
-                } else {
-                    console.error("Задача для обновления не найдена!");
+                    this.inProgressTasks.splice(index, 1, {
+                        updatedTask,
+                        returnReason: null
+                    });
                 }
             }
             this.closeEditForm()
@@ -104,7 +113,7 @@ Vue.component('Task',{
         deleteTask(task) {
             const index = this.tasks.findIndex(t => t.name === task.name);
             if (index !== -1) {
-                this.tasks.splice(index, 1); // Удаляем задачу из массива
+                this.tasks.splice(index, 1);
             }
         },
         moveToInProgress(task) {
@@ -123,6 +132,22 @@ Vue.component('Task',{
                 taskToMove.lastModifiedAt = new Date().toISOString().slice(0, 16);
                 this.testingTasks.push(taskToMove);
                 this.inProgressTasks.splice(index, 1);
+            }
+        },
+        returnToInProgress(task, reason) {
+            const index = this.testingTasks.findIndex(t => t.name === task.name);
+            if (index !== -1) {
+                const taskToReturn = { ...this.testingTasks[index] };
+                taskToReturn.lastModifiedAt = new Date().toISOString().slice(0, 16);
+                taskToReturn.returnReason = reason;
+                this.inProgressTasks.push(taskToReturn);
+                this.testingTasks.splice(index, 1);
+            }
+        },
+        handleReturnFromTesting(taskName, reason) {
+            const task = this.testingTasks.find(t => t.name === taskName);
+            if (task) {
+                this.returnToInProgress(task, reason);
             }
         },
         openCreateForm() {
@@ -384,6 +409,7 @@ Vue.component('InProgressTasks', {
                         </p>
                     </div>
                 </ul>
+                <p v-if="task.returnReason">Причина возврата: {{ task.returnReason }}</p>
                 <p><strong>Дедлайн:</strong> {{ formatDate(task.deadline) }}</p>
                 <div class="red-move">
                     <button @click="$emit('edit-task', task)" class="redact">Редактировать</button>
@@ -423,13 +449,78 @@ Vue.component('TestingTasks', {
                 </div>
             </ul>
             <p><strong>Дедлайн:</strong> {{ formatDate(task.deadline) }}</p>
-            <button @click="$emit('edit-task', task)" class="redact">Редактировать</button>
+            <div class="red-ret">
+                <button @click="$emit('edit-task', task)" class="redact">Редактировать</button>
+                <button @click="openReturnForm(task)" class="returnInWork">Отправить обратно</button>
+            </div>
+
+            <modal :show="showReturnForm" @close="closeReturnForm">
+                <div class="modal-content">
+                    <ReturnTaskForm
+                        v-if="showReturnForm"
+                        :task="returnTask" 
+                        @task-returned="handleTaskReturned" 
+                        @close="closeReturnForm" />
+                </div>
+            </modal>
+        </div>
+    </div>
+    `,
+    data() {
+        return {
+            showReturnForm: false,
+            returnTask: null
+        };
+    },
+    methods: {
+        formatDate(date) {
+            return new Date(date).toLocaleString();
+        },
+        openReturnForm(task) {
+            this.returnTask = task;
+            this.showReturnForm = true;
+        },
+        closeReturnForm() {
+            this.showReturnForm = false;
+            this.returnTask = null;
+        },
+        handleTaskReturned(taskName, reason) {
+            this.$emit('return-from-testing', taskName, reason);
+            this.closeReturnForm();
+        }
+    }
+});
+
+Vue.component('ReturnTaskForm', {
+    props: {
+        task: {
+            type: Object,
+            required: true
+        }
+    },
+    data() {
+        return {
+            returnReason: "" // Поле для хранения причины возврата
+        };
+    },
+    template: `
+    <div class="modal-return">
+        <h4>Введите причину возврата:</h4>
+        <input v-model="returnReason" type="text" placeholder="Причина возврата" />
+        <div>
+            <button @click="submit" >Вернуть в работу</button>
+            <button @click="$emit('close')">Отмена</button>
         </div>
     </div>
     `,
     methods: {
-        formatDate(date) {
-            return new Date(date).toLocaleString();
+        submit() {
+            if (!this.returnReason || this.returnReason.trim() === "") {
+                alert("Причина возврата обязательна!");
+                return;
+            }
+            this.$emit('task-returned', this.task.name, this.returnReason); // Отправляем событие с правильной ссылкой на задачу
+            this.$emit('close'); // Закрываем форму
         }
     }
 });
@@ -456,5 +547,5 @@ Vue.component('modal',{
 })
 
 let app = new Vue ({
-    el: '#app'
+    el: '#app',
 })
