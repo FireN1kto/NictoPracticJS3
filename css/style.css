@@ -329,3 +329,22 @@ body {
     font-size: 30pt;
     margin-bottom: 5%;
 }
+
+.overdue {
+    color: red;
+    font-weight: bold;
+}
+
+.on-time {
+    color: green;
+    font-weight: bold;
+}
+
+.status {
+    background: #b3dcfd;
+    border-radius: 10px;
+    padding: 3%;
+    margin-top: 2%;
+    display: flex;
+    justify-content: center;
+}

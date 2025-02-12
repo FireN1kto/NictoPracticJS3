@@ -182,6 +182,9 @@ Vue.component('Task',{
             if (index !== -1) {
                 const taskToComplete = { ...this.testingTasks[index] };
                 taskToComplete.lastModifiedAt = new Date().toISOString().slice(0, 16);
+                const deadline = new Date(taskToComplete.deadline);
+                const now = new Date();
+                taskToComplete.status = deadline > now ? "выполнена в срок" : "просрочена";
                 this.completedTasks.push(taskToComplete);
                 this.testingTasks.splice(index, 1);
             }
@@ -573,12 +576,16 @@ Vue.component('CompletedTasks', {
                     </div>
                 </ul>
                 <p>Дедлайн: {{ formatDate(task.deadline) }}</p>
+                <p class="status">Статус: <strong :class="getStatusClass(task.status)">{{ task.status }}</strong></p>
             </div>
         </div>
     `,
     methods: {
         formatDate(date) {
             return new Date(date).toLocaleString();
+        },
+        getStatusClass(status) {
+            return status === "просрочена" ? "overdue" : "on-time";
         }
     }
 });
