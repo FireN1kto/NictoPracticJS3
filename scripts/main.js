@@ -56,7 +56,12 @@ Vue.component('Task',{
                 :tasks="testingTasks" 
                 @edit-task="startEditTask"
                 @return-from-testing="handleReturnFromTesting"
+                @move-to-completed="handleMoveToCompleted"
             ></TestingTasks>
+        </div>
+        <div class="completedTasks">
+            <h2>Выполненные задачи</h2>
+            <CompletedTasks :tasks="completedTasks" />
         </div>
     </div>
     `,
@@ -65,6 +70,7 @@ Vue.component('Task',{
             tasks: [],
             inProgressTasks: [],
             testingTasks: [],
+            completedTasks: [],
             showCreateForm: false,
             showEditForm: false,
             showReturnForm: false,
@@ -169,6 +175,21 @@ Vue.component('Task',{
                 this.openEditForm();
             } else {
                 console.error("Задача для редактирования не найдена!");
+            }
+        },
+        moveToCompleted(task) {
+            const index = this.testingTasks.findIndex(t => t.name === task.name);
+            if (index !== -1) {
+                const taskToComplete = { ...this.testingTasks[index] };
+                taskToComplete.lastModifiedAt = new Date().toISOString().slice(0, 16);
+                this.completedTasks.push(taskToComplete);
+                this.testingTasks.splice(index, 1);
+            }
+        },
+        handleMoveToCompleted(taskName) {
+            const task = this.testingTasks.find(t => t.name === taskName);
+            if (task) {
+                this.moveToCompleted(task);
             }
         }
     }
@@ -452,6 +473,7 @@ Vue.component('TestingTasks', {
             <div class="red-ret">
                 <button @click="$emit('edit-task', task)" class="redact">Редактировать</button>
                 <button @click="openReturnForm(task)" class="returnInWork">Отправить обратно</button>
+                <button @click="moveToCompleted(task.name)" class="completed">Завершить задачу</button>
             </div>
 
             <modal :show="showReturnForm" @close="closeReturnForm">
@@ -487,6 +509,9 @@ Vue.component('TestingTasks', {
         handleTaskReturned(taskName, reason) {
             this.$emit('return-from-testing', taskName, reason);
             this.closeReturnForm();
+        },
+        moveToCompleted(taskName) {
+            this.$emit('move-to-completed', taskName);
         }
     }
 });
@@ -521,6 +546,39 @@ Vue.component('ReturnTaskForm', {
             }
             this.$emit('task-returned', this.task.name, this.returnReason); // Отправляем событие с правильной ссылкой на задачу
             this.$emit('close'); // Закрываем форму
+        }
+    }
+});
+
+Vue.component('CompletedTasks', {
+    props: {
+        tasks: {
+            type: Array,
+            default: () => []
+        }
+    },
+    template: `
+        <div>
+            <p v-if="tasks.length === 0" class="noneTasks">Здесь ещё нет завершенных задач.</p>
+            <div v-for="(task, index) in tasks" :key="index">
+                <h3>{{ task.name }}</h3>
+                <p>Дата создания: {{ formatDate(task.createdAt) }}</p>
+                <p>Дата завершения: {{ formatDate(task.lastModifiedAt) }}</p>
+                <ul>
+                    <p>Описание задачи:</p>
+                    <div class="puncts">
+                        <p v-for="(punct, index) in task.puncts" :key="index">
+                            <li v-for="(punct, index) in task.puncts" :key="index">{{ punct }}</li>
+                        </p>
+                    </div>
+                </ul>
+                <p>Дедлайн: {{ formatDate(task.deadline) }}</p>
+            </div>
+        </div>
+    `,
+    methods: {
+        formatDate(date) {
+            return new Date(date).toLocaleString();
         }
     }
 });
