@@ -39,7 +39,23 @@ Vue.component('Task',{
             <InProgressTasks 
                 :tasks="inProgressTasks" 
                 @edit-task="startEditTask"
+                @move-to-testing="moveToTesting"
             ></InProgressTasks>
+        </div>
+        <div class="testingTasks">
+            <h2>Задачи на тестировании</h2>
+            <modal :show="showEditForm" @close="closeEditForm">
+                <div class="modal-content">
+                    <editTask 
+                        :task="editingTask" 
+                        @task-updated="updateTask"
+                    />
+                </div>
+            </modal>
+            <TestingTasks 
+                :tasks="testingTasks" 
+                @edit-task="startEditTask" 
+            ></TestingTasks>
         </div>
     </div>
     `,
@@ -47,9 +63,10 @@ Vue.component('Task',{
         return {
             tasks: [],
             inProgressTasks: [],
-            showCreateForm: false, // Отображение формы создания
-            showEditForm: false,   // Отображение формы редактирования
-            editingTask: null     // Задача для редактирования
+            testingTasks: [],
+            showCreateForm: false,
+            showEditForm: false,
+            editingTask: null
         }
     },
     methods: {
@@ -93,10 +110,19 @@ Vue.component('Task',{
         moveToInProgress(task) {
             const index = this.tasks.findIndex(t => t.name === task.name);
             if (index !== -1) {
-                const taskToMove = { ...this.tasks[index] }; // Копируем задачу
-                taskToMove.lastModifiedAt = new Date().toISOString().slice(0, 16); // Обновляем дату последнего изменения
-                this.inProgressTasks.push(taskToMove); // Добавляем в блок "в работе"
-                this.tasks.splice(index, 1); // Удаляем из блока новых задач
+                const taskToMove = { ...this.tasks[index] };
+                taskToMove.lastModifiedAt = new Date().toISOString().slice(0, 16);
+                this.inProgressTasks.push(taskToMove);
+                this.tasks.splice(index, 1);
+            }
+        },
+        moveToTesting(task) {
+            const index = this.inProgressTasks.findIndex(t => t.name === task.name);
+            if (index !== -1) {
+                const taskToMove = { ...this.inProgressTasks[index] };
+                taskToMove.lastModifiedAt = new Date().toISOString().slice(0, 16);
+                this.testingTasks.push(taskToMove);
+                this.inProgressTasks.splice(index, 1);
             }
         },
         openCreateForm() {
@@ -343,7 +369,7 @@ Vue.component('InProgressTasks', {
         }
     },
     template: `
-    <div class="task-div">
+    <div class="progressTask-div">
         <ul>
             <p v-if="!tasks.length" class="noneTasks">Здесь ещё нет задач в работе.</p>
             <div v-for="task in tasks" :key="task.name" class="tasks-info">
@@ -359,9 +385,46 @@ Vue.component('InProgressTasks', {
                     </div>
                 </ul>
                 <p><strong>Дедлайн:</strong> {{ formatDate(task.deadline) }}</p>
-                <button @click="$emit('edit-task', task)" class="redact">Редактировать</button>
+                <div class="red-move">
+                    <button @click="$emit('edit-task', task)" class="redact">Редактировать</button>
+                    <button @click="$emit('move-to-testing', task)" class="move-to-testing">Взять на тестировку</button>
+                </div>
             </div>
         </ul>
+    </div>
+    `,
+    methods: {
+        formatDate(date) {
+            return new Date(date).toLocaleString();
+        }
+    }
+});
+
+Vue.component('TestingTasks', {
+    props: {
+        tasks: {
+            type: Array,
+            default: () => []
+        }
+    },
+    template: `
+    <div>
+        <p v-if="!tasks.length" class="noneTasks">Здесь ещё нет задач в тестировании.</p>
+        <div v-for="task in tasks" :key="task.name" class="tasks-info">
+            <p class="taskName">{{ task.name }}</p>
+            <p><strong>Дата создания:</strong> {{ formatDate(task.createdAt) }}</p>
+            <p><strong>Дата последнего изменения:</strong> {{ formatDate(task.lastModifiedAt) }}</p>
+            <ul>
+                <p>Описание задачи:</p>
+                <div class="puncts">
+                    <p v-for="(punct, index) in task.puncts" :key="index">
+                        <li v-for="(punct, index) in task.puncts" :key="index">{{ punct }}</li>
+                    </p>
+                </div>
+            </ul>
+            <p><strong>Дедлайн:</strong> {{ formatDate(task.deadline) }}</p>
+            <button @click="$emit('edit-task', task)" class="redact">Редактировать</button>
+        </div>
     </div>
     `,
     methods: {

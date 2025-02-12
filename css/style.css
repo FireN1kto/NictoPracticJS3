@@ -10,13 +10,15 @@ body {
 
 .allBlocks {
     display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
 }
 
 .newTasks {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-left: 5%;
+    margin-left: 3%;
     background: rgba(255, 127, 80, 0.9);
     width: 20%;
     padding: 4%;
@@ -40,6 +42,7 @@ body {
     padding: 5%;
     background-color: #b3dcfd;
     border: none;
+    border-radius: 5px;
 }
 
 .red-del-tak {
@@ -53,6 +56,7 @@ body {
     padding: 4%;
     background-color: #b3dcfd;
     border: none;
+    border-radius: 5px;
     margin-top: 5%;
     width: 40%;
 }
@@ -61,6 +65,7 @@ body {
     padding: 4%;
     background-color: #b3dcfd;
     border: none;
+    border-radius: 5px;
     margin-top: 5%;
     width: 50%;
 }
@@ -69,6 +74,16 @@ body {
     padding: 4%;
     background-color: #b3dcfd;
     border: none;
+    border-radius: 5px;
+    margin-top: 5%;
+    width: 50%;
+}
+
+.move-to-testing {
+    padding: 4%;
+    background-color: #b3dcfd;
+    border: none;
+    border-radius: 5px;
     margin-top: 5%;
     width: 50%;
 }
@@ -164,6 +179,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
+    margin-bottom: 5%;
 }
 
 .tasks-info > ul {
@@ -215,6 +231,37 @@ body {
 }
 
 .inProgressTasks > h2 {
+    font-size: 30pt;
+    margin-bottom: 5%;
+}
+
+.progressTask-div {
+    display: flex;
+    justify-content: center;
+    width: 80%;
+}
+
+.red-move {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+}
+
+.testingTasks {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-left: 8%;
+    background: rgba(255, 127, 80, 0.9);
+    width: 30%;
+    padding: 4%;
+    border-radius: 10px;
+    border: 3px solid #b3dcfd;
+    margin-top: 5%;
+}
+
+.testingTasks > h2 {
     font-size: 30pt;
     margin-bottom: 5%;
 }
