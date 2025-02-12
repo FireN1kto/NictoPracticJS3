@@ -95,6 +95,7 @@ Vue.component('Task',{
                     returnReason: null
                 });
                 this.closeCreateForm();
+                this.saveToLocalStorage();
             }
         },
         updateTask(updatedTask) {
@@ -120,6 +121,7 @@ Vue.component('Task',{
             const index = this.tasks.findIndex(t => t.name === task.name);
             if (index !== -1) {
                 this.tasks.splice(index, 1);
+                this.saveToLocalStorage();
             }
         },
         moveToInProgress(task) {
@@ -129,6 +131,7 @@ Vue.component('Task',{
                 taskToMove.lastModifiedAt = new Date().toISOString().slice(0, 16);
                 this.inProgressTasks.push(taskToMove);
                 this.tasks.splice(index, 1);
+                this.saveToLocalStorage();
             }
         },
         moveToTesting(task) {
@@ -138,6 +141,7 @@ Vue.component('Task',{
                 taskToMove.lastModifiedAt = new Date().toISOString().slice(0, 16);
                 this.testingTasks.push(taskToMove);
                 this.inProgressTasks.splice(index, 1);
+                this.saveToLocalStorage();
             }
         },
         returnToInProgress(task, reason) {
@@ -148,6 +152,7 @@ Vue.component('Task',{
                 taskToReturn.returnReason = reason;
                 this.inProgressTasks.push(taskToReturn);
                 this.testingTasks.splice(index, 1);
+                this.saveToLocalStorage();
             }
         },
         handleReturnFromTesting(taskName, reason) {
@@ -187,6 +192,7 @@ Vue.component('Task',{
                 taskToComplete.status = deadline > now ? "выполнена в срок" : "просрочена";
                 this.completedTasks.push(taskToComplete);
                 this.testingTasks.splice(index, 1);
+                this.saveToLocalStorage();
             }
         },
         handleMoveToCompleted(taskName) {
@@ -194,7 +200,22 @@ Vue.component('Task',{
             if (task) {
                 this.moveToCompleted(task);
             }
+        },
+        saveToLocalStorage() {
+            localStorage.setItem('tasks', JSON.stringify(this.tasks));
+            localStorage.setItem('inProgressTasks', JSON.stringify(this.inProgressTasks));
+            localStorage.setItem('testingTasks', JSON.stringify(this.testingTasks));
+            localStorage.setItem('completedTasks', JSON.stringify(this.completedTasks));
+        },
+        loadFromLocalStorage() {
+            this.tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            this.inProgressTasks = JSON.parse(localStorage.getItem('inProgressTasks')) || [];
+            this.testingTasks = JSON.parse(localStorage.getItem('testingTasks')) || [];
+            this.completedTasks = JSON.parse(localStorage.getItem('completedTasks')) || [];
         }
+    },
+    created() {
+        this.loadFromLocalStorage();
     }
 });
 
