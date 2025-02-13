@@ -102,7 +102,8 @@ Vue.component('Task',{
             let index = this.tasks.findIndex(task => task.name === updatedTask.name);
             if (index !== -1) {
                 this.tasks.splice(index, 1, {
-                    updatedTask,
+                    ...updatedTask,
+                    lastModifiedAt: new Date().toISOString().slice(0, 16),
                     returnReason: null
                 });
             } else {
@@ -110,7 +111,8 @@ Vue.component('Task',{
                 index = this.inProgressTasks.findIndex(task => task.name === updatedTask.name);
                 if (index !== -1) {
                     this.inProgressTasks.splice(index, 1, {
-                        updatedTask,
+                        ...updatedTask,
+                        lastModifiedAt: new Date().toISOString().slice(0, 16),
                         returnReason: null
                     });
                 }
@@ -225,10 +227,16 @@ Vue.component('createTask', {
         <p>
             <label for="task">Название задачи</label>
             <input id="task" v-model="name" placeholder="Пройти бося Оленя в Valheim">
+            <span v-if="errors.includes('Требуется название!')" class="error">
+                Требуется название!
+            </span>
         </p>
         <div v-for="(punct, index) in puncts" :key="index" class="info-punct">
             <textarea v-model="puncts[index]" placeholder="Задача" class="punct"></textarea>
             <button @click.stop="removePunct(index)" class="delete-punct">Удалить пункт</button>
+            <span v-if="errors.includes('Заполните все пункты или удалите пустые поля!') && !punct.trim()" class="error">
+                    Пункт не должен быть пустым!
+            </span>
         </div>
         <p>
             <label for="createdAt">Дата создания:</label>
@@ -237,16 +245,13 @@ Vue.component('createTask', {
         <p>
             <label for="deadline">Дедлайн:</label>
             <input type="datetime-local" id="deadline" v-model="deadline">
+            <span v-if="errors.includes('Ошибка дедлайна!')" class="error">
+                Укажите корректный дедлайн!
+            </span>
         </p>
-        <p>
+        <p class="add-create">
             <button @click="addPunct" class="add-punct">Добавить пункт</button>
             <input type="submit" value="Создать задачу">
-        </p>
-        <p v-if="errors.length">
-            <b>Пожалуйста, исправьте следующие ошибки:</b>
-            <ul>
-                <li v-for="error in errors">{{ error }}</li>
-            </ul>
         </p>
     </form>
     `,
@@ -307,21 +312,30 @@ Vue.component('editTask', {
     },
     template: `
     <form class="task-form" @submit.prevent="onSubmit">
-        <p>
+        <p class="NameTask">
             <label for="task">Название задачи</label>
             <input id="task" v-model="name" placeholder="Пройти бося Оленя в Valheim">
+            <span v-if="errors.includes('Требуется название!')" class="error">
+                Требуется название!
+            </span>
         </p>
         <div v-for="(punct, index) in puncts" :key="index" class="info-punct">
             <textarea v-model="puncts[index]" placeholder="Задача" class="punct"></textarea>
             <button @click.stop="removePunct(index)" class="delete-punct">Удалить пункт</button>
+            <span v-if="errors.includes('Заполните все пункты или удалите пустые поля!') && !punct.trim()" class="error">
+                    Пункт не должен быть пустым!
+            </span>
         </div>
         <p>
             <label for="createdAt">Дата создания:</label>
             <input type="datetime-local" id="createdAt" v-model="createdAt" disabled>
         </p>
-        <p>
+        <p class="dateLastModificated">
             <label for="lastModifiedAt">Дата последнего изменения:</label>
             <input type="datetime-local" id="lastModifiedAt" v-model="lastModifiedAt" disabled>
+            <span v-if="errors.includes('Ошибка дедлайна!')" class="error">
+                Укажите корректный дедлайн!
+            </span>
         </p>
         <p>
             <label for="deadline">Дедлайн:</label>
@@ -331,21 +345,15 @@ Vue.component('editTask', {
             <button @click="addPunct" class="addPunct">Добавить пункт</button>
             <input type="submit" value="Сохранить изменения">
         </p>
-        <p v-if="errors.length">
-            <b>Пожалуйста, исправьте следующие ошибки:</b>
-            <ul>
-                <li v-for="error in errors">{{ error }}</li>
-            </ul>
-        </p>
     </form>
     `,
     data() {
         return {
-            name: this.task.name,
-            puncts: [...this.task.puncts],
-            createdAt: this.task.createdAt,
-            lastModifiedAt: this.task.lastModifiedAt || new Date().toISOString().slice(0, 16),
-            deadline: this.task.deadline,
+            name: this.task ? this.task.name : '',
+            puncts: this.task ? [...this.task.puncts] : [],
+            createdAt: this.task ? this.task.createdAt : new Date().toISOString().slice(0, 16),
+            lastModifiedAt: this.task ? this.task.lastModifiedAt || new Date().toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
+            deadline: this.task ? this.task.deadline : null,
             errors: []
         };
     },
@@ -398,7 +406,7 @@ Vue.component('Tasks', {
     <div class="task-div">
         <ul>
             <p v-if="!tasks.length" class="noneTasks">Здесь ещё нет задач.</p>
-            <div v-for="task in tasks" :key="task.name" class="tasks-info">
+            <div v-for="task in tasks" :key="task.name" class="tasks-info task-fade-enter-active">
                 <p class="taskName">{{ task.name }}</p>
                 <p><strong>Дата создания:</strong> {{ formatDate(task.createdAt) }}</p>
                 <p><strong>Дата последнего изменения:</strong> {{ formatDate(task.lastModifiedAt) }}</p>
@@ -442,7 +450,7 @@ Vue.component('InProgressTasks', {
     <div class="progressTask-div">
         <ul>
             <p v-if="!tasks.length" class="noneTasks">Здесь ещё нет задач в работе.</p>
-            <div v-for="task in tasks" :key="task.name" class="tasks-info">
+            <div v-for="task in tasks" :key="task.name" class="tasks-info in-progress-fade-enter-active">
                 <p class="taskName">{{ task.name }}</p>
                 <p><strong>Дата создания:</strong> {{ formatDate(task.createdAt) }}</p>
                 <p><strong>Дата последнего изменения:</strong> {{ formatDate(task.lastModifiedAt) }}</p>
@@ -476,12 +484,16 @@ Vue.component('TestingTasks', {
         tasks: {
             type: Array,
             default: () => []
+        },
+        show: {
+            type: Boolean,
+            default: false
         }
     },
     template: `
     <div>
         <p v-if="!tasks.length" class="noneTasks">Здесь ещё нет задач в тестировании.</p>
-        <div v-for="task in tasks" :key="task.name" class="tasks-info">
+        <div v-for="task in tasks" :key="task.name" class="tasks-info testing-fade-enter-active">
             <p class="taskName">{{ task.name }}</p>
             <p><strong>Дата создания:</strong> {{ formatDate(task.createdAt) }}</p>
             <p><strong>Дата последнего изменения:</strong> {{ formatDate(task.lastModifiedAt) }}</p>
@@ -503,7 +515,7 @@ Vue.component('TestingTasks', {
             <modal :show="showReturnForm" @close="closeReturnForm">
                 <div class="modal-content">
                     <ReturnTaskForm
-                        v-if="showReturnForm"
+                        v-if show="showReturnForm"
                         :task="returnTask" 
                         @task-returned="handleTaskReturned" 
                         @close="closeReturnForm" />
@@ -556,8 +568,8 @@ Vue.component('ReturnTaskForm', {
     <div class="modal-return">
         <h4>Введите причину возврата:</h4>
         <input v-model="returnReason" type="text" placeholder="Причина возврата" />
-        <div>
-            <button @click="submit" >Вернуть в работу</button>
+        <div style="width: 100%">
+            <button @click="submit" style="margin-right: 2%">Вернуть в работу</button>
             <button @click="$emit('close')">Отмена</button>
         </div>
     </div>
@@ -584,7 +596,7 @@ Vue.component('CompletedTasks', {
     template: `
         <div>
             <p v-if="tasks.length === 0" class="noneTasks">Здесь ещё нет завершенных задач.</p>
-            <div v-for="(task, index) in tasks" :key="index">
+            <div v-for="(task, index) in tasks" :key="index"  class="tasks-info completed-fade-enter-active">
                 <h3>{{ task.name }}</h3>
                 <p>Дата создания: {{ formatDate(task.createdAt) }}</p>
                 <p>Дата завершения: {{ formatDate(task.lastModifiedAt) }}</p>
@@ -620,7 +632,7 @@ Vue.component('modal',{
         }
     },
     template: `
-    <div v-if="show" class="modal-overlay">
+    <div v-if show="show" class="modal-overlay" :class="{ show: show }">
         <span @click="closeModal" class="close">&times;</span>
         <slot></slot>
     </div>
@@ -628,7 +640,8 @@ Vue.component('modal',{
     methods: {
         closeModal() {
             this.$emit('close');
-        }
+        },
+
     },
 })
 
